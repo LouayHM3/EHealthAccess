@@ -1,0 +1,18 @@
+% Career-safe reference model: baseline confidentiality
+% Run with AVISPA/OFMC in an AVISPA environment.
+role requester(Requester, Server: agent, Kab: symmetric_key, SND, RCV: channel(dy)) played_by Requester
+def= local State: nat init State := 0 transition
+  1. State = 0 /\\ RCV(start) =|> State' := 1 /\\ SND({request_pid_Kab})
+  2. State = 1 /\\ RCV({masked_pid_Kab}) =|> State' := 2
+end role
+
+role server(Requester, Server: agent, Kab: symmetric_key, SND, RCV: channel(dy)) played_by Server
+def= local State: nat, MaskedPid: message init State := 0 transition
+  1. State = 0 /\\ RCV({request_pid_Kab}) =|> State' := 1 /\\ SND({MaskedPid_Kab}) /\\ secret(MaskedPid, secrecy_pid, {Requester, Server})
+end role
+
+role session(Requester, Server: agent, Kab: symmetric_key) def= local SND, RCV: channel(dy) composition requester(Requester, Server, Kab, SND, RCV) /\\ server(Requester, Server, Kab, SND, RCV) end role
+role environment() def= const requester, server: agent, kab: symmetric_key, start: message composition session(requester, server, kab) end role
+goal secrecy_of secrecy_pid
+end goal
+environment()
